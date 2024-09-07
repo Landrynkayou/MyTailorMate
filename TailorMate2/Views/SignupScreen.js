@@ -7,8 +7,6 @@ import {
   Platform,
   Alert,
   TouchableOpacity,
-  Button,
- Text
 } from 'react-native';
 import AppText from './Apptext';
 import AppInputText from './AppInputText';
@@ -19,7 +17,7 @@ const SignupScreen = ({ route, navigation }) => {
   const { role } = route.params || {};
 
   const [formData, setFormData] = useState({
-    role: role || 'Customer', // Default to 'Customer' now
+    role: role || 'Customer', // Default to 'Customer'
     fullName: '',
     email: '',
     phone: '',
@@ -48,23 +46,18 @@ const SignupScreen = ({ route, navigation }) => {
   };
 
   const validateEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const validatePhone = phone => /^\d{10}$/.test(phone);
+  const validatePhone = phone => /^\d{10}$/.test(phone); // Changed to 10 digits
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     const { role, fullName, email, phone, password, confirmPassword, businessName, address } = formData;
+  
     let validationErrors = {};
 
     if (!fullName) validationErrors.fullName = "Full Name is required.";
-    if (!email) {
-      validationErrors.email = "Email is required.";
-    } else if (!validateEmail(email)) {
-      validationErrors.email = "Invalid email address.";
-    }
-    if (!phone) {
-      validationErrors.phone = "Phone Number is required.";
-    } else if (!validatePhone(phone)) {
-      validationErrors.phone = "Phone number must be 10 digits.";
-    }
+    if (!email) validationErrors.email = "Email is required.";
+    else if (!validateEmail(email)) validationErrors.email = "Invalid email address.";
+    if (!phone) validationErrors.phone = "Phone Number is required.";
+    else if (!validatePhone(phone)) validationErrors.phone = "Phone number must be 10 digits.";
     if (!password) validationErrors.password = "Password is required.";
     if (password !== confirmPassword) validationErrors.confirmPassword = "Passwords do not match.";
     if (role === 'Tailor') {
@@ -77,54 +70,54 @@ const SignupScreen = ({ route, navigation }) => {
       return;
     }
 
-    Alert.alert('Success', 'Sign-up successful!');
+    try {
+      // Construct the endpoint based on role
+      let endpoint = '';
+      switch (role) {
+        case 'Tailor':
+          endpoint = 'http://192.168.1.190:5000/api/tailors/signup';
+          break;
+        case 'Admin':
+          endpoint = 'http://192.168.1.190:5000/api/admins/signup';
+          break;
+        default:
+          endpoint = 'http://192.168.1.190:5000/api/clients/signup';
+          break;
+      }
 
-    // Navigate to the appropriate screen after signup
-    if (role === 'Tailor') {
-      navigation.navigate('TailorLandingPage');
-    } else if (role === 'Customer') { // Updated to 'Customer'
-      navigation.navigate('ClientLandingScreen');
-    } else {
-      console.log('Unknown role');
-      // Handle unknown roles if needed
-    }
-  };
+      // Send data to the backend using fetch
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+    
+      if (response.ok) {
+        const data = await response.json();
+        Alert.alert('Success', 'Sign-up successful!');
 
-  // Mock data for testing
-  const mockTailor = {
-    role: 'Tailor',
-    fullName: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '1234567890',
-    password: 'password123',
-    confirmPassword: 'password123',
-    businessName: 'John\'s Tailoring',
-    address: '123 Tailor Street'
-  };
-
-  const mockCustomer = { // Updated from 'Client' to 'Customer'
-    role: 'Customer',
-    fullName: 'Jane Smith',
-    email: 'jane.smith@example.com',
-    phone: '0987654321',
-    password: 'password456',
-    confirmPassword: 'password456',
-    businessName: '', // Not required for customers
-    address: '' // Not required for customers
-  };
-
-  // Function to fill form with mock data based on role
-  const fillFormWithMockData = () => {
-    if (formData.role === 'Tailor') {
-      setFormData(mockTailor);
-    } else if (formData.role === 'Customer') { // Updated to 'Customer'
-      setFormData(mockCustomer);
+        // Navigate to the appropriate screen after signup
+        if (role === 'Tailor') {
+          navigation.navigate('TailorLandingPage');
+        } else if (role === 'Admin') {
+          navigation.navigate('AdminLandingPage');
+        } else {
+          navigation.navigate('ClientLandingScreen');
+        }
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Sign-up failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error during sign up:', error);
+      Alert.alert('Error', error.message || 'Network request failed. Please check your connection.');
     }
   };
 
   return (
     <SafeAreaView style={tw`flex-1 bg-gray-100`}>
-       
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={tw`flex-1 p-5`}
@@ -234,9 +227,6 @@ const SignupScreen = ({ route, navigation }) => {
               titleStyle={tw`text-center text-blue-600 text-lg`}
             />
           </TouchableOpacity>
-
-          {/* Button to fill the form with mock data */}
-          <Button title="Fill with Mock Data" onPress={fillFormWithMockData} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

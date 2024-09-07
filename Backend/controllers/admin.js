@@ -1,5 +1,5 @@
 const Admin = require('../models/admin');
-const User = require('../models/Users');
+const User = require('../models/Users'); // Ensure this matches the model file
 
 exports.createAdmin = async (req, res) => {
   try {
