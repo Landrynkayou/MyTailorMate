@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons'; // Ensure you have this package installed or use another icon library
-import tw  from 'twrnc';
+import tw from 'twrnc';
 
-const AppInputText = ({ 
-  value, 
-  onChangeText, 
-  placeholder, 
-  secureTextEntry, 
-  error, 
-  icon 
+const AppInputText = ({
+  value,
+  onChangeText,
+  placeholder,
+  secureTextEntry,
+  error,
+  icon
 }) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(!secureTextEntry);
 
@@ -23,6 +23,14 @@ const AppInputText = ({
         tw`flex-row items-center border rounded-lg p-2 w-full`, 
         error ? tw`border-red-500 bg-gray-200` : tw`border-gray-300 bg-gray-200`
       ]}>
+        {icon && (
+          <FontAwesome
+            name={icon}
+            size={20}
+            color="purple" // Gray color for the icon
+            style={tw`mr-2`} // Margin right for spacing
+          />
+        )}
         <TextInput
           value={value}
           onChangeText={onChangeText}
@@ -39,7 +47,7 @@ const AppInputText = ({
             <FontAwesome 
               name={isPasswordVisible ? 'eye' : 'eye-slash'} 
               size={20} 
-              color="#3498db" // Blue color for the eye icon
+              color="purple" // Blue color for the eye icon
             />
           </TouchableOpacity>
         )}

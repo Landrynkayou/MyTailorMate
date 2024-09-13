@@ -32,7 +32,15 @@ const userSchema = new mongoose.Schema({
   address: {
     type: String,
     required: function() { return this.role === 'Tailor'; }
-  }
+  },
+  location: {
+    type: String, // Changed to string for simplicity
+    required: function() { return this.role === 'Tailor'; } // Make location required only for Tailors
+  },
+    resetPasswordToken: String,
+  resetPasswordExpire: Date,
+  
+  
 });
 
 userSchema.pre('save', async function(next) {

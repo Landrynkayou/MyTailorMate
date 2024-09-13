@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import tw from 'twrnc';
-
+import { linking } from 'expo';
 // Import your screens
 import SignupScreen from './Views/SignupScreen';
 import LoginScreen from './Views/login';
@@ -26,19 +26,21 @@ import ClientLandingScreen from './Views/Client/ClientLandingScreen';
 import ClientProfileScreen from './Views/Client/ProfileScreen';
 import AppointmentScreen from './Views/Client/BookAppointmentScreen';
 import TailorAppointmentScreen from './Views/Tailor/TailorAppointmentScreen';
+import TailorSelectionScreen from './Views/Client/SelectTailorScreen';
 
 const Stack = createStackNavigator();
 
 export default function App() {
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <View style={tw`flex-1 bg-gray-100`}>
         <StatusBar style="auto" />
         <Stack.Navigator initialRouteName="Welcome">
           <Stack.Screen
             name="Welcome"
             component={WelcomeScreen}
-            options={{ title: 'Welcome' }}
+            options={{ title: 'Welcome' , headerShown: false,
+              headerLeft: null,}}
           />
           <Stack.Screen
             name="RolePicker"
@@ -48,17 +50,24 @@ export default function App() {
           <Stack.Screen
             name="Signup"
             component={SignupScreen}
-            options={{ title: 'Create Account' }}
+            options={{ title: 'Create Account', headerShown: false,
+              headerLeft: null, }}
           />
           <Stack.Screen
             name="Login"
             component={LoginScreen}
-            options={{ title: 'Login' }}
+            options={{
+               title: 'Login' ,
+               headerShown: false,
+               headerLeft: null,
+            }}
           />
           <Stack.Screen
             name="TailorLandingPage"
             component={TailorLandingPage}
-            options={{ title: 'Tailor Dashboard' }}
+            options={{ title: 'Tailor Dashboard', 
+              headerShown: false,
+              headerLeft: null,}}
           />
           <Stack.Screen
             name="ForgotPassword"
@@ -80,63 +89,70 @@ export default function App() {
             component={AddClientScreen}
             options={{ title: 'Add client' }}
           />
-            <Stack.Screen
+          <Stack.Screen
             name="PasswordRecoverySuccess"
             component={PasswordRecoverySuccessScreen}
-            options={{ title: 'Password recovery succesfull' }}
-          />  
+            options={{ title: 'Password recovery successful' }}
+          />
           <Stack.Screen
-          name="OTPVerification"
-          component={OTPVerificationScreen}
-          options={{ title: 'OTP verification' }}
-        />  
-        <Stack.Screen
-        name="SetNewPassword"
-        component={SetNewPasswordScreen}
-        options={{ title: 'Set new password' }}
-      />
-       <Stack.Screen
-        name="TailorProfile"
-        component={ProfileScreen}
-        options={{ title: 'Profile' }}
-      />
-      
-      <Stack.Screen
-      name="OrderScreen"
-      component={OrderListScreen}
-      options={{ title: "Orders" }}
-    />
-     <Stack.Screen
-      name="NotificationScreen"
-      component={NotificationScreen}
-      options={{ title: "Notifications" }}
-    />
-    <Stack.Screen
-      name="ChatScreen"
-      component={ChatScreen}
-      options={{ title: "Chat" }}
-    />
-     <Stack.Screen
-      name="ClientLandingScreen"
-      component={ClientLandingScreen}
-      options={{ title: "Client Dashboard" }}
-    />
-     <Stack.Screen
-      name="ClientProfileScreen"
-      component={ClientProfileScreen}
-      options={{ title: "Client profile" }}
-    /> 
-     <Stack.Screen
-    name="AppointmentScreen"
-    component={AppointmentScreen}
-    options={{ title: "Appointment screen" }}
-  />
-   <Stack.Screen
-    name="TailorAppointmentScreen"
-    component={TailorAppointmentScreen}
-    options={{ title: "Appointment screen" }}
-  />
-  
+            name="OTPVerification"
+            component={OTPVerificationScreen}
+            options={{ title: 'OTP verification' }}
+          />
+          <Stack.Screen
+            name="SetNewPassword"
+            component={SetNewPasswordScreen}
+            options={{ title: 'Set new password' }}
+          />
+          <Stack.Screen
+            name="TailorProfile"
+            component={ProfileScreen}
+            options={{ title: 'Profile' }}
+          />
+          <Stack.Screen
+            name="OrderScreen"
+            component={OrderListScreen}
+            options={{ title: 'Orders' }}
+          />
+          <Stack.Screen
+            name="NotificationScreen"
+            component={NotificationScreen}
+            options={{ title: 'Notifications' }}
+          />
+          <Stack.Screen
+            name="ChatScreen"
+            component={ChatScreen}
+            options={{ title: 'Chat' }}
+          />
+          <Stack.Screen
+            name="ClientLandingScreen"
+            component={ClientLandingScreen}
+            options={{ 
+              title: 'Client Dashboard',
+              headerShown: false,
+              headerLeft: null,
+             }}
+          />
+          <Stack.Screen
+            name="ClientProfileScreen"
+            component={ClientProfileScreen}
+            options={{ title: 'Client Profile' }}
+          />
+          <Stack.Screen
+            name="AppointmentScreen"
+            component={AppointmentScreen}
+            options={{ title: 'Appointment Screen' }}
+          />
+          <Stack.Screen
+            name="TailorAppointmentScreen"
+            component={TailorAppointmentScreen}
+            options={{ title: 'Tailor Appointment Screen' }}
+          />
+          <Stack.Screen
+            name="TailorSelectionScreen"
+            component={TailorSelectionScreen}
+            options={{ title: 'Tailor Selection Screen' }}
+          />
         </Stack.Navigator>
       </View>
     </NavigationContainer>

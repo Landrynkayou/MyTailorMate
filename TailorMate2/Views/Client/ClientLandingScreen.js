@@ -1,12 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, SafeAreaView, Animated, Easing, ScrollView, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import tw from 'twrnc';
 
 const ClientLandingScreen = ({ navigation }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuAnim] = useState(new Animated.Value(-300)); // Start off-screen
+  const [selectedTailor, setSelectedTailor] = useState(null); // Store selected tailor
+
+  useEffect(() => {
+    // Check if a tailor has been selected and store it in state
+    const fetchSelectedTailor = async () => {
+      try {
+        const tailor = await AsyncStorage.getItem('selectedTailor');
+        if (tailor) {
+          setSelectedTailor(JSON.parse(tailor));
+        } else {
+          // If no tailor is selected, navigate to the TailorSelectionScreen
+          navigation.navigate('TailorSelectionScreen');
+        }
+      } catch (error) {
+        console.error("Error fetching selected tailor", error);
+      }
+    };
+
+    fetchSelectedTailor();
+  }, []);
 
   const handleMenuToggle = () => {
     setMenuVisible(!menuVisible);
@@ -24,9 +45,14 @@ const ClientLandingScreen = ({ navigation }) => {
     }
   };
 
+  const handleNavigation = (screen) => {
+    // Pass the selected tailor's ID as a parameter when navigating
+    navigation.navigate(screen, { tailorId: selectedTailor?._id });
+  };
+
   return (
     <SafeAreaView style={tw`flex-1 bg-gray-100`}>
-      <View style={tw`flex-row items-center  py-4 px-5`}>
+      <View style={tw`flex-row items-center py-4 px-5`}>
         <TouchableOpacity style={tw`p-2`} onPress={handleMenuToggle}>
           <MaterialIcons name="menu" size={24} color="black" />
         </TouchableOpacity>
@@ -42,34 +68,28 @@ const ClientLandingScreen = ({ navigation }) => {
             style={styles.gradientRectangle}
           >
             <Text style={styles.welcomeMessage}>Welcome to TailorMate!</Text>
+            {selectedTailor && (
+              <Text style={styles.selectedTailorText}>
+               with: {selectedTailor.businessName}
+              </Text>
+            )}
           </LinearGradient>
         </View>
+
         <View style={styles.grid}>
-          <TouchableOpacity 
-            style={styles.item} 
-            onPress={() => navigation.navigate('ChatScreen')}
-          >
+          <TouchableOpacity style={styles.item} onPress={() => handleNavigation('ChatScreen')}>
             <MaterialIcons name="chat" size={50} color="#fff" />
             <Text style={styles.text}>Chat with Tailor</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.item} 
-            onPress={() => navigation.navigate('AppointmentScreen')}
-          >
+          <TouchableOpacity style={styles.item} onPress={() => handleNavigation('AppointmentScreen')}>
             <MaterialIcons name="event" size={50} color="#fff" />
             <Text style={styles.text}>Book Appointment</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.item} 
-            onPress={() => navigation.navigate('NotificationScreen')}
-          >
+          <TouchableOpacity style={styles.item} onPress={() => handleNavigation('NotificationScreen')}>
             <MaterialIcons name="notifications" size={50} color="#fff" />
             <Text style={styles.text}>View Notifications</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.item} 
-            onPress={() => navigation.navigate('ClientProfileScreen')}
-          >
+          <TouchableOpacity style={styles.item} onPress={() => handleNavigation('ClientProfileScreen')}>
             <MaterialIcons name="person" size={50} color="#fff" />
             <Text style={styles.text}>Update Profile</Text>
           </TouchableOpacity>
@@ -88,19 +108,19 @@ const ClientLandingScreen = ({ navigation }) => {
         {menuVisible && (
           <TouchableOpacity style={styles.overlay} onPress={handleOverlayPress} />
         )}
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ClientProfileScreen')}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => handleNavigation('ClientProfileScreen')}>
           <MaterialIcons name="person" size={24} color="white" />
           <Text style={tw`ml-2 text-lg text-white`}>Profile</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('NotificationScreen')}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => handleNavigation('NotificationScreen')}>
           <MaterialIcons name="notifications" size={24} color="white" />
           <Text style={tw`ml-2 text-lg text-white`}>Notifications</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChatScreen')}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => handleNavigation('ChatScreen')}>
           <MaterialIcons name="chat" size={24} color="white" />
           <Text style={tw`ml-2 text-lg text-white`}>Chat</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('AppointmentScreen')}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => handleNavigation('AppointmentScreen')}>
           <MaterialIcons name="event" size={24} color="white" />
           <Text style={tw`ml-2 text-lg text-white`}>Appointments</Text>
         </TouchableOpacity>
@@ -119,6 +139,7 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    gap: 20,
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
@@ -142,7 +163,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     width: '100%',
     alignItems: 'center',
-    marginBottom: 120, // Increased distance
+    marginBottom: 170, // Increased distance
   },
   gradientRectangle: {
     width: '90%',
@@ -158,6 +179,11 @@ const styles = StyleSheet.create({
     fontSize: 24, // Increased font size
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  selectedTailorText: {
+    color: '#fff',
+    fontSize: 18,
+    marginTop: 10,
   },
   menuModal: {
     position: 'absolute',

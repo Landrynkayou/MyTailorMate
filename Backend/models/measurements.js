@@ -1,13 +1,18 @@
 const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-const measurementsSchema = new mongoose.Schema({
-  msrId: Number,
-  height: Number,
-  weight: Number,
-  chestSize: Number,
-  waistSize: Number,
-  hipSize: Number,
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+// Define the measurement schema
+const measurementSchema = new Schema({
+  clientId: { type: Schema.Types.ObjectId, ref: 'Client', required: true },
+  height: { type: Number, required: true },
+  weight: { type: Number, required: true },
+  chestSize: { type: Number, required: true },
+  waistSize: { type: Number, required: true },
+  hipSize: { type: Number, required: true },
 });
 
-module.exports = mongoose.model('Measurements', measurementsSchema);
+// Create the Measurement model
+const Measurement = mongoose.model('Measurement', measurementSchema);
+
+// Export the model
+module.exports = Measurement;

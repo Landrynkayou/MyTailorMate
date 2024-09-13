@@ -16,9 +16,12 @@
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
+    "dotenv-flow": "^4.1.0",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.6.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.15",
     "route": "^0.2.5",
     "socket.io": "^4.7.5",
     "socket.io-client": "^4.7.5"

@@ -1,13 +1,41 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import tw from 'twrnc';
 
 const ForgotPasswordScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = () => {
-    // Implement API call to send reset password email
-    navigation.navigate('OTPVerification');
+  const handleSubmit = async () => {
+    if (!email) {
+      Alert.alert('Error', 'Please enter your email address.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch('http://192.168.1.190:5000/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        Alert.alert('Success', 'Password reset link sent to your email.');
+        navigation.navigate('OTPVerification'); // Navigate to the OTP screen
+      } else {
+        Alert.alert('Error', data.message || 'Something went wrong.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to send password reset link. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -28,8 +56,13 @@ const ForgotPasswordScreen = ({ navigation }) => {
       <TouchableOpacity
         style={tw`bg-blue-600 py-4 px-10 rounded-full shadow-lg`}
         onPress={handleSubmit}
+        disabled={loading}
       >
-        <Text style={tw`text-white font-bold text-lg`}>Submit</Text>
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={tw`text-white font-bold text-lg`}>Submit</Text>
+        )}
       </TouchableOpacity>
     </View>
   );

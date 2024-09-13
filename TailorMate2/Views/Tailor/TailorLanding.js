@@ -1,19 +1,39 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Image, SafeAreaView, TextInput, Animated, Easing, Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import tw from 'twrnc';
 
 const TailorLandingScreen = ({ navigation }) => {
   const [clients, setClients] = useState([
-    { id: '1', name: 'John Doe', avatar: 'https://i.pravatar.cc/150?img=1' },
-    { id: '2', name: 'Jane Smith', avatar: 'https://i.pravatar.cc/150?img=2' },
   ]);
   const [searchText, setSearchText] = useState('');
   const [searchVisible, setSearchVisible] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
-  const [menuAnim] = useState(new Animated.Value(-300)); 
-  const [showAddClientForm, setShowAddClientForm] = useState(false); 
+  const [menuAnim] = useState(new Animated.Value(-300));
+  const [showAddClientForm, setShowAddClientForm] = useState(false);
   const searchInputRef = useRef(null);
+  const [userId, setUserId] = useState(null);
+
+  useEffect(() => {
+    // Fetch userId from AsyncStorage
+    const fetchUserId = async () => {
+      try {
+        const storedUserId = await AsyncStorage.getItem('userId');
+        if (storedUserId) {
+          setUserId(storedUserId);
+        } else {
+          Alert.alert('Error', 'User ID is missing. Please log in again.');
+          navigation.navigate('Login'); // Redirect to login if userId is missing
+        }
+      } catch (error) {
+        console.error('Failed to retrieve userId from AsyncStorage', error);
+        Alert.alert('Error', 'Failed to retrieve user data');
+      }
+    };
+
+    fetchUserId();
+  }, []);
 
   const filteredClients = clients.filter((client) =>
     client.name.toLowerCase().includes(searchText.toLowerCase())
@@ -21,17 +41,17 @@ const TailorLandingScreen = ({ navigation }) => {
 
   const handleDisconnect = () => {
     Alert.alert(
-      "Disconnect",
-      "Are you sure you want to disconnect?",
+      'Disconnect',
+      'Are you sure you want to disconnect?',
       [
         {
-          text: "Cancel",
-          style: "cancel"
+          text: 'Cancel',
+          style: 'cancel',
         },
         {
-          text: "Yes",
-          onPress: () => navigation.navigate('Login'), 
-        }
+          text: 'Yes',
+          onPress: () => navigation.navigate('Login'),
+        },
       ]
     );
   };
@@ -61,8 +81,11 @@ const TailorLandingScreen = ({ navigation }) => {
     }
   };
 
+ 
+
   return (
     <SafeAreaView style={tw`flex-1 bg-gray-100`}>
+      
       <View style={tw`flex-row mb-5 items-center py-4 px-5`}>
         <TouchableOpacity style={tw`p-2`} onPress={handleMenuToggle}>
           <MaterialIcons name="menu" size={24} color="black" />
@@ -90,44 +113,40 @@ const TailorLandingScreen = ({ navigation }) => {
         <FlatList
           data={filteredClients}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity 
-              style={tw`flex-row items-center bg-white rounded-lg mx-5 my-2 p-3 shadow-lg`}
-            >
-              <View style={tw`mr-4`}>
-                <Image source={{ uri: item.avatar }} style={tw`w-12 h-12 rounded-full`} />
-              </View>
-              <View style={tw`flex-1`}>
-                <Text style={tw`text-lg font-semibold text-gray-800`}>{item.name}</Text>
-                <Text style={tw`text-sm text-gray-500`}>Client</Text>
-              </View>
-              <MaterialIcons name="chevron-right" size={24} color="#333" />
-            </TouchableOpacity>
-          )}
-          ListEmptyComponent={() => (
-            <Text style={tw`text-center mt-5 text-lg text-gray-600`}>No clients found</Text>
-          )}
+        
         />
       )}
 
       {!showAddClientForm && (
         <View style={tw`flex-1 justify-end items-center pb-5`}>
           <View style={tw`flex-row justify-between w-4/5 mb-5`}>
-            <TouchableOpacity style={tw`bg-blue-600 p-4 rounded-full w-15 h-15 items-center justify-center`} onPress={() =>navigation.navigate('Catalog')}>
+            <TouchableOpacity
+              style={tw`bg-purple-600 p-4 rounded-full w-15 h-15 items-center justify-center`}
+              onPress={() => navigation.navigate('Catalog')}
+            >
               <MaterialIcons name="library-books" size={24} color="#fff" />
             </TouchableOpacity>
-            <TouchableOpacity style={tw`bg-blue-600 p-4 rounded-full w-15 h-15 items-center justify-center`} onPress={() => navigation.navigate('OrderScreen')}>
+            <TouchableOpacity
+              style={tw`bg-purple-600 p-4 rounded-full w-15 h-15 items-center justify-center`}
+              onPress={() => navigation.navigate('OrderScreen')}
+            >
               <MaterialIcons name="list-alt" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
-          <TouchableOpacity style={tw`absolute bottom-7 w-15 h-15 rounded-full bg-violet-600 items-center justify-center shadow-lg`} onPress={() => navigation.navigate('AddClientScreen')}>
+          <TouchableOpacity
+            style={tw`absolute bottom-7 w-15 h-15 rounded-full bg-violet-600 items-center justify-center shadow-lg`}
+            onPress={() => navigation.navigate('AddClientScreen')}
+          >
             <MaterialIcons name="add" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
       )}
 
       <Animated.View
-        style={[tw`absolute top-0 bottom-0 left-0 w-75 bg-blue-500 py-5 px-3 shadow-lg`, { transform: [{ translateX: menuAnim }] }]}
+        style={[
+          tw`absolute top-10 bottom-10 left-0 w-75 bg-gray-200 py-5 px-3 shadow-lg`,
+          { transform: [{ translateX: menuAnim }] },
+        ]}
       >
         {menuVisible && (
           <TouchableOpacity style={tw`absolute top-1 right-2 p-2`} onPress={handleMenuToggle}>
@@ -135,39 +154,58 @@ const TailorLandingScreen = ({ navigation }) => {
           </TouchableOpacity>
         )}
         {menuVisible && (
-          <TouchableOpacity style={tw`absolute top-2 left-0 right-0 bottom-0`} onPress={handleOverlayPress} />
+          <TouchableOpacity
+            style={tw`absolute top-2 left-0 right-0 bottom-0`}
+            onPress={handleOverlayPress}
+          />
         )}
-        <TouchableOpacity style={tw`flex-row items-center mt-10 py-2 px-5`} onPress={() => navigation.navigate('TailorProfile')}>
-          <MaterialIcons name="person" size={24} color="white" />
-          <Text style={tw`ml-2 text-lg text-white`}>Profile</Text>
+        <TouchableOpacity
+          style={tw`flex-row items-center mt-10 py-2 px-5`}
+          onPress={() => navigation.navigate('TailorProfile')}
+        >
+          <MaterialIcons name="person" size={24} color="purple" />
+          <Text style={tw`ml-2 text-lg `}>Profile</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={tw`flex-row items-center py-2 px-5`} onPress={() => navigation.navigate('NotificationScreen')}>
-          <MaterialIcons name="notifications" size={24} color="white" />
-          <Text style={tw`ml-2 text-lg text-white`}>Notifications</Text>
+        <TouchableOpacity
+          style={tw`flex-row items-center py-2 px-5`}
+          onPress={() => navigation.navigate('NotificationScreen')}
+        >
+          <MaterialIcons name="notifications" size={24} color="purple" />
+          <Text style={tw`ml-2 text-lg `}>Notifications</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={tw`flex-row items-center py-2 px-5`} onPress={handleDisconnect}>
-          <MaterialIcons name="exit-to-app" size={24} color="white" />
-          <Text style={tw`ml-2 text-lg text-white`}>Disconnect</Text>
+        <TouchableOpacity
+          style={tw`flex-row items-center py-2 px-5`}
+          onPress={handleDisconnect}
+        >
+          <MaterialIcons name="exit-to-app" size={24} color="purple" />
+          <Text style={tw`ml-2 text-lg `}>Disconnect</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={tw`flex-row items-center py-2 px-5`} onPress={() => navigation.navigate('ClientDetails')}>
-          <MaterialIcons name="people" size={24} color="white" />
-          <Text style={tw`ml-2 text-lg text-white`}>Clients</Text>
+        <TouchableOpacity
+          style={tw`flex-row items-center py-2 px-5`}
+          onPress={() => navigation.navigate('ClientDetails')}
+        >
+          <MaterialIcons name="people" size={24} color="purple" />
+          <Text style={tw`ml-2 text-lg `}>Clients</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={tw`flex-row items-center py-2 px-5`} onPress={() => navigation.navigate('OrderScreen')}>
-          <MaterialIcons name="assignment" size={24} color="white" />
-          <Text style={tw`ml-2 text-lg text-white`}>Orders</Text>
+        <TouchableOpacity
+          style={tw`flex-row items-center py-2 px-5`}
+          onPress={() => navigation.navigate('OrderScreen')}
+        >
+          <MaterialIcons name="assignment" size={24} color="purple" />
+          <Text style={tw`ml-2 text-lg `}>Orders</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={tw`flex-row items-center py-2 px-5`} onPress={() => navigation.navigate('Catalog')}>
-          <MaterialIcons name="library-books" size={24} color="white" />
-          <Text style={tw`ml-2 text-lg text-white`}>Catalog</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={tw`flex-row items-center py-2 px-5`} onPress={() => navigation.navigate('ChatScreen')}>
-          <MaterialIcons name="chat" size={24} color="white" />
-          <Text style={tw`ml-2 text-lg text-white`}>Chat</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={tw`flex-row items-center py-2 px-5`} onPress={() => navigation.navigate('TailorAppointmentScreen')}>
-          <MaterialIcons name="calendar-today" size={24} color="white" />
-          <Text style={tw`ml-2 text-lg text-white`}>Appointments</Text>
+        <TouchableOpacity
+          style={tw`flex-row items-center py-2 px-5`}
+          onPress={() => {
+            if (userId) {
+              navigation.navigate('TailorAppointmentScreen', { userId });
+            } else {
+              Alert.alert('Error', 'User ID is not available.');
+            }
+          }}
+        >
+          <MaterialIcons name="event" size={24} color="purple" />
+          <Text style={tw`ml-2 text-lg `}>Appointments</Text>
         </TouchableOpacity>
       </Animated.View>
     </SafeAreaView>

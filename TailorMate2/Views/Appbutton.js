@@ -4,7 +4,7 @@ import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 function AppButton({ 
   title, 
   onPress, 
-  color = "dodgerblue", 
+  color = "", 
   textColor = "white", 
   width = 250, 
   height = 50, 

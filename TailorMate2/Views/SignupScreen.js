@@ -11,6 +11,7 @@ import {
 import AppText from './Apptext';
 import AppInputText from './AppInputText';
 import AppButton from './Appbutton';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import tw from 'twrnc';
 
 const SignupScreen = ({ route, navigation }) => {
@@ -24,7 +25,8 @@ const SignupScreen = ({ route, navigation }) => {
     password: '',
     confirmPassword: '',
     businessName: '',
-    address: ''
+    address: '',
+    location: '' // Added location field
   });
 
   const [errors, setErrors] = useState({});
@@ -46,11 +48,11 @@ const SignupScreen = ({ route, navigation }) => {
   };
 
   const validateEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const validatePhone = phone => /^\d{10}$/.test(phone); // Changed to 10 digits
+  const validatePhone = phone => /^\d{10}$/.test(phone); // Updated to 10 digits
 
   const handleSignup = async () => {
-    const { role, fullName, email, phone, password, confirmPassword, businessName, address } = formData;
-  
+    const { role, fullName, email, phone, password, confirmPassword, businessName, address, location } = formData;
+
     let validationErrors = {};
 
     if (!fullName) validationErrors.fullName = "Full Name is required.";
@@ -64,6 +66,7 @@ const SignupScreen = ({ route, navigation }) => {
       if (!businessName) validationErrors.businessName = "Business Name is required for tailors.";
       if (!address) validationErrors.address = "Address is required for tailors.";
     }
+    if (!location) validationErrors.location = "Location is required.";
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -93,18 +96,32 @@ const SignupScreen = ({ route, navigation }) => {
         },
         body: JSON.stringify(formData),
       });
-    
-      if (response.ok) {
-        const data = await response.json();
-        Alert.alert('Success', 'Sign-up successful!');
 
-        // Navigate to the appropriate screen after signup
-        if (role === 'Tailor') {
-          navigation.navigate('TailorLandingPage');
-        } else if (role === 'Admin') {
-          navigation.navigate('AdminLandingPage');
+      const data = await response.json();
+
+      if (response.ok) {
+        const { token, user } = data;
+
+        // Check if user.id exists and is valid before storing it in AsyncStorage
+        if (token && user && user.role && user.id) {
+          Alert.alert('Success', 'Sign-up successful!');
+
+          // Store token and user data in AsyncStorage
+          await AsyncStorage.setItem('token', token);
+          await AsyncStorage.setItem('userRole', user.role);
+          await AsyncStorage.setItem('userID', user.id);
+
+          // Navigate to the appropriate screen after signup
+          if (role === 'Tailor') {
+            navigation.navigate('TailorLandingPage');
+          } else if (role === 'Admin') {
+            navigation.navigate('AdminLandingPage');
+          } else {
+            navigation.navigate('ClientLandingScreen');
+          }
         } else {
-          navigation.navigate('ClientLandingScreen');
+          console.error('Incomplete user data:', data);
+          throw new Error('Incomplete user data received from the server.');
         }
       } else {
         const errorData = await response.json();
@@ -141,7 +158,7 @@ const SignupScreen = ({ route, navigation }) => {
             value={formData.fullName}
             onChangeText={(text) => handleChange('fullName', text)}
             error={errors.fullName}
-            icon="user"
+            icon="user" // Assuming 'user' icon is available
             containerStyle={tw`mb-4`}
           />
           
@@ -152,7 +169,7 @@ const SignupScreen = ({ route, navigation }) => {
             keyboardType="email-address"
             autoCapitalize="none"
             error={errors.email}
-            icon="mail"
+            icon="envelope" // Assuming 'mail' icon is available
             containerStyle={tw`mb-4`}
           />
           
@@ -162,7 +179,7 @@ const SignupScreen = ({ route, navigation }) => {
             onChangeText={(text) => handleChange('phone', text)}
             keyboardType="phone-pad"
             error={errors.phone}
-            icon="phone"
+            icon="phone" // Assuming 'phone' icon is available
             containerStyle={tw`mb-4`}
           />
           
@@ -172,7 +189,7 @@ const SignupScreen = ({ route, navigation }) => {
             onChangeText={(text) => handleChange('password', text)}
             secureTextEntry
             error={errors.password}
-            icon="lock"
+            icon="lock" // Assuming 'lock' icon is available
             containerStyle={tw`mb-4`}
           />
           
@@ -182,7 +199,7 @@ const SignupScreen = ({ route, navigation }) => {
             onChangeText={(text) => handleChange('confirmPassword', text)}
             secureTextEntry
             error={errors.confirmPassword}
-            icon="lock"
+            icon="lock" // Assuming 'lock' icon is available
             containerStyle={tw`mb-4`}
           />
           
@@ -193,7 +210,7 @@ const SignupScreen = ({ route, navigation }) => {
                 value={formData.businessName}
                 onChangeText={(text) => handleChange('businessName', text)}
                 error={errors.businessName}
-                icon="briefcase"
+                icon="briefcase" // Assuming 'briefcase' icon is available
                 containerStyle={tw`mb-4`}
               />
               
@@ -202,29 +219,39 @@ const SignupScreen = ({ route, navigation }) => {
                 value={formData.address}
                 onChangeText={(text) => handleChange('address', text)}
                 error={errors.address}
-                icon="home"
+                icon="home" // Assuming 'home' icon is available
                 containerStyle={tw`mb-4`}
               />
             </>
           )}
-          
+
+          {/* Added location input field */}
+          <AppInputText
+            placeholder="Location"
+            value={formData.location}
+            onChangeText={(text) => handleChange('location', text)}
+            error={errors.location}
+            icon="map-pin" // Assuming 'map-pin' icon is available
+            containerStyle={tw`mb-4`}
+          />
+
           <AppButton 
             title="Sign Up" 
             onPress={handleSignup}
-            style={tw`mt-5 bg-blue-600 rounded-lg mx-10`}
+            style={tw`mt-5 my-5 bg-purple-600 w-82 rounded-lg `}
           />
           
           <TouchableOpacity onPress={() => navigation.navigate('RolePicker')} style={tw`mt-5`}>
             <AppText 
               title="Change Role"
-              titleStyle={tw`text-center text-blue-600 text-lg`}
+              titleStyle={tw`text-center text-lg`}
             />
           </TouchableOpacity>
           
           <TouchableOpacity onPress={() => navigation.navigate('Login')} style={tw`mt-5`}>
             <AppText 
               title="Already have an account? Log In"
-              titleStyle={tw`text-center text-blue-600 text-lg`}
+              titleStyle={tw`text-center text-purple-600 text-lg`}
             />
           </TouchableOpacity>
         </ScrollView>

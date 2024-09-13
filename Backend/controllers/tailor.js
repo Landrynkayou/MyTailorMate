@@ -11,6 +11,26 @@ exports.createTailor = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+exports.getAllTailors = async (req, res) => {
+    try {
+      const tailors = await Tailor.find();
+      res.json(tailors);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  };
+  
+exports.getTailor = async (req, res) => {
+    try {
+      const tailor = await Tailor.findById(req.params.tailorId);
+      if (!tailor) {
+        return res.status(404).json({ message: 'Tailor not found' });
+      }
+      res.json(tailor);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  };
 
 exports.viewMeasurements = async (req, res) => {
   try {

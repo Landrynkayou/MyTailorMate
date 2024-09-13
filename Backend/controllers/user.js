@@ -1,5 +1,5 @@
 const User = require('../models/User'); // Ensure this matches the model filename
-
+a
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -37,6 +37,14 @@ exports.createUser = async (req, res) => {
     // Save the user to the database
     await user.save();
 
+    // Create a new tailor record
+    const newTailor = new Tailor({
+        userID: newUser._id,
+        businessName,
+        address,
+      });
+      await newTailor.save();
+  
     // Generate a JWT token (optional)
     const token = jwt.sign({ userId: user._id, role: user.role }, 'your_jwt_secret', { expiresIn: '1h' });
 
