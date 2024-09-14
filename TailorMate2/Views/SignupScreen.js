@@ -12,6 +12,7 @@ import AppText from './Apptext';
 import AppInputText from './AppInputText';
 import AppButton from './Appbutton';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Joi from 'joi'; // Use the main Joi library
 import tw from 'twrnc';
 
 const SignupScreen = ({ route, navigation }) => {
@@ -47,31 +48,47 @@ const SignupScreen = ({ route, navigation }) => {
     }));
   };
 
-  const validateEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const validatePhone = phone => /^\d{10}$/.test(phone); // Updated to 10 digits
+  // Define Joi schema
+  const schema = Joi.object({
+    fullName: Joi.string().required().label("Full Name"),
+    email: Joi.string().email({ tlds: { allow: false } }).required().label("Email"),
+    phone: Joi.string().pattern(/^\d{10}$/).required().label("Phone Number"),
+    password: Joi.string().min(8).required().label("Password"),
+    confirmPassword: Joi.any().valid(Joi.ref('password')).required().label("Confirm Password").messages({
+      'any.only': 'Passwords do not match.',
+    }),
+    role: Joi.string().valid('Customer', 'Tailor', 'Admin').required().label("Role"),
+    businessName: Joi.when('role', {
+      is: 'Tailor',
+      then: Joi.string().required().label("Business Name"),
+    }),
+    address: Joi.when('role', {
+      is: 'Tailor',
+      then: Joi.string().required().label("Address"),
+    }),
+    location: Joi.string().required().label("Location"),
+  });
+
+  const validate = () => {
+    const { error } = schema.validate(formData, { abortEarly: false });
+    if (!error) return null;
+
+    const errors = {};
+    error.details.forEach(detail => {
+      errors[detail.path[0]] = detail.message;
+    });
+    return errors;
+  };
 
   const handleSignup = async () => {
-    const { role, fullName, email, phone, password, confirmPassword, businessName, address, location } = formData;
-
-    let validationErrors = {};
-
-    if (!fullName) validationErrors.fullName = "Full Name is required.";
-    if (!email) validationErrors.email = "Email is required.";
-    else if (!validateEmail(email)) validationErrors.email = "Invalid email address.";
-    if (!phone) validationErrors.phone = "Phone Number is required.";
-    else if (!validatePhone(phone)) validationErrors.phone = "Phone number must be 10 digits.";
-    if (!password) validationErrors.password = "Password is required.";
-    if (password !== confirmPassword) validationErrors.confirmPassword = "Passwords do not match.";
-    if (role === 'Tailor') {
-      if (!businessName) validationErrors.businessName = "Business Name is required for tailors.";
-      if (!address) validationErrors.address = "Address is required for tailors.";
-    }
-    if (!location) validationErrors.location = "Location is required.";
-
-    if (Object.keys(validationErrors).length > 0) {
+    // Validate the form
+    const validationErrors = validate();
+    if (validationErrors) {
       setErrors(validationErrors);
       return;
     }
+
+    const { role, fullName, email, phone, password, confirmPassword, businessName, address, location } = formData;
 
     try {
       // Construct the endpoint based on role
@@ -102,7 +119,6 @@ const SignupScreen = ({ route, navigation }) => {
       if (response.ok) {
         const { token, user } = data;
 
-        // Check if user.id exists and is valid before storing it in AsyncStorage
         if (token && user && user.role && user.id) {
           Alert.alert('Success', 'Sign-up successful!');
 
@@ -120,7 +136,6 @@ const SignupScreen = ({ route, navigation }) => {
             navigation.navigate('ClientLandingScreen');
           }
         } else {
-          console.error('Incomplete user data:', data);
           throw new Error('Incomplete user data received from the server.');
         }
       } else {
@@ -128,7 +143,6 @@ const SignupScreen = ({ route, navigation }) => {
         throw new Error(errorData.message || 'Sign-up failed. Please try again.');
       }
     } catch (error) {
-      console.error('Error during sign up:', error);
       Alert.alert('Error', error.message || 'Network request failed. Please check your connection.');
     }
   };
@@ -158,7 +172,7 @@ const SignupScreen = ({ route, navigation }) => {
             value={formData.fullName}
             onChangeText={(text) => handleChange('fullName', text)}
             error={errors.fullName}
-            icon="user" // Assuming 'user' icon is available
+            icon="user"
             containerStyle={tw`mb-4`}
           />
           
@@ -169,7 +183,7 @@ const SignupScreen = ({ route, navigation }) => {
             keyboardType="email-address"
             autoCapitalize="none"
             error={errors.email}
-            icon="envelope" // Assuming 'mail' icon is available
+            icon="envelope"
             containerStyle={tw`mb-4`}
           />
           
@@ -179,7 +193,7 @@ const SignupScreen = ({ route, navigation }) => {
             onChangeText={(text) => handleChange('phone', text)}
             keyboardType="phone-pad"
             error={errors.phone}
-            icon="phone" // Assuming 'phone' icon is available
+            icon="phone"
             containerStyle={tw`mb-4`}
           />
           
@@ -189,7 +203,7 @@ const SignupScreen = ({ route, navigation }) => {
             onChangeText={(text) => handleChange('password', text)}
             secureTextEntry
             error={errors.password}
-            icon="lock" // Assuming 'lock' icon is available
+            icon="lock"
             containerStyle={tw`mb-4`}
           />
           
@@ -199,10 +213,10 @@ const SignupScreen = ({ route, navigation }) => {
             onChangeText={(text) => handleChange('confirmPassword', text)}
             secureTextEntry
             error={errors.confirmPassword}
-            icon="lock" // Assuming 'lock' icon is available
+            icon="lock"
             containerStyle={tw`mb-4`}
           />
-          
+
           {formData.role === 'Tailor' && (
             <>
               <AppInputText
@@ -210,7 +224,7 @@ const SignupScreen = ({ route, navigation }) => {
                 value={formData.businessName}
                 onChangeText={(text) => handleChange('businessName', text)}
                 error={errors.businessName}
-                icon="briefcase" // Assuming 'briefcase' icon is available
+                icon="briefcase"
                 containerStyle={tw`mb-4`}
               />
               
@@ -219,7 +233,7 @@ const SignupScreen = ({ route, navigation }) => {
                 value={formData.address}
                 onChangeText={(text) => handleChange('address', text)}
                 error={errors.address}
-                icon="home" // Assuming 'home' icon is available
+                icon="home"
                 containerStyle={tw`mb-4`}
               />
             </>
@@ -231,7 +245,7 @@ const SignupScreen = ({ route, navigation }) => {
             value={formData.location}
             onChangeText={(text) => handleChange('location', text)}
             error={errors.location}
-            icon="map-pin" // Assuming 'map-pin' icon is available
+            icon="map-pin"
             containerStyle={tw`mb-4`}
           />
 
@@ -250,8 +264,8 @@ const SignupScreen = ({ route, navigation }) => {
           
           <TouchableOpacity onPress={() => navigation.navigate('Login')} style={tw`mt-5`}>
             <AppText 
-              title="Already have an account? Log In"
-              titleStyle={tw`text-center text-purple-600 text-lg`}
+              title="Already have an account? Login"
+              titleStyle={tw`text-center text-lg text-blue-600`}
             />
           </TouchableOpacity>
         </ScrollView>

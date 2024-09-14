@@ -5,28 +5,21 @@ const routes = require('./routes/routes'); // Import the routes from route.js
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
+const http = require('http'); // Needed for Socket.io
+const socketIO = require('socket.io'); // Import Socket.io
 
 // Load environment variables
 dotenv.config();
 
-// Connect to the databaserou
+// Connect to the database
 connectDB();
 
 // Initialize the app
 const app = express();
+const server = http.createServer(app); // Create HTTP server using express app
+const io = socketIO(server); // Initialize Socket.io with the server
 
-/*
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Set the destination folder for uploaded files
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // Set file name with timestamp
-  }
-});
 
-const upload = multer({ storage });
-*/
 // Middleware
 app.use(express.json()); // For parsing JSON bodies
 app.use(cors({ // Enable CORS
@@ -36,7 +29,32 @@ app.use(cors({ // Enable CORS
 }));
 
 // Serve static files from the 'uploads' directory
-// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static('uploads'));
+
+
+// Socket.io connection handling
+io.on('connection', (socket) => {
+  console.log(`New client connected: ${socket.id}`);
+
+  // Handle disconnection
+  socket.on('disconnect', () => {
+    console.log(`Client disconnected: ${socket.id}`);
+  });
+
+  // Example event - This is where you can add custom events
+  socket.on('exampleEvent', (data) => {
+    console.log(`Received exampleEvent with data: ${data}`);
+    io.emit('exampleResponse', 'Response from the server'); // Emitting a response event
+  });
+});
+
+// Attach Socket.io instance to the request object so it can be used in routes/controllers
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
+
 
 // Routes
 app.use('/api', routes); // Prefix all routes with /api
@@ -56,7 +74,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 // Start the server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 

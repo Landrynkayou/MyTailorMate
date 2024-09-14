@@ -1,5 +1,4 @@
 const User = require('../models/User'); // Ensure this matches the model filename
-a
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, FlatList, Alert, ActivityIndicator, Modal, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, SafeAreaView, FlatList, Alert, ActivityIndicator, Modal, StyleSheet, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import tw from 'twrnc';
 import { FontAwesome5 } from '@expo/vector-icons'; // Import icons
@@ -57,7 +57,6 @@ const TailorAppointmentScreen = ({ navigation }) => {
         throw new Error('Failed to fetch appointments');
       }
       const data = await response.json();
-      console.log(userId)
       setAppointments(data);
     } catch (error) {
       console.error('Error fetching appointments', error);
@@ -69,7 +68,7 @@ const TailorAppointmentScreen = ({ navigation }) => {
 
   const handleValidateAppointment = async (id) => {
     console.log('Validating appointment with ID:', id);
-    
+
     // Optimistic update
     const updatedAppointments = appointments.map((appointment) =>
       appointment._id === id ? { ...appointment, validated: true, status: 'confirmed' } : appointment
@@ -111,11 +110,17 @@ const TailorAppointmentScreen = ({ navigation }) => {
         setModalVisible(true);
       }}
     >
-      <FontAwesome5 name={item.validated ? 'check-circle' : 'times-circle'} size={24} color={item.validated ? 'green' : 'red'} style={tw`mr-4`} />
+      <FontAwesome5
+        name={item.validated ? 'check-circle' : 'times-circle'}
+        size={24}
+        color={item.validated ? 'green' : 'red'}
+        style={tw`mr-4`}
+      />
       <View style={tw`flex-1`}>
-        <Text style={tw`font-semibold text-lg text-gray-800`}>{item.clientName}</Text> {/* Display client name */}
-        <Text style={tw`text-gray-600`}>{item.date}</Text>
-        <Text style={tw`text-gray-600`}>{item.details}</Text>
+        <Text style={tw`font-semibold text-lg text-gray-800`}>{item.clientName}</Text>
+        <Text style={tw`text-gray-600`}>{item.date || 'No Date'}</Text>
+        <Text style={tw`text-gray-600`}>{item.time || 'No Details'}</Text>
+        <Text style={tw`text-gray-600`}>{item.details || 'No Details'}</Text>
         <Text style={tw`mt-2 ${item.validated ? 'text-green-500' : 'text-red-500'}`}>
           {item.validated ? 'Validated' : 'Not Validated'}
         </Text>
@@ -150,12 +155,25 @@ const TailorAppointmentScreen = ({ navigation }) => {
             {selectedAppointment && (
               <>
                 <Text style={tw`text-lg font-semibold mb-2`}>Appointment Details</Text>
-                <Text style={tw`text-base mb-2`}>Client: {selectedAppointment.clientName}</Text> {/* Display client name */}
-                <Text style={tw`text-base mb-2`}>Date: {selectedAppointment.date}</Text>
-                <Text style={tw`text-base mb-2`}>Details: {selectedAppointment.details}</Text>
+                <Text style={tw`text-base mb-2`}>Client: {selectedAppointment.clientName || 'N/A'}</Text>
+                <Text style={tw`text-base mb-2`}>Date: {selectedAppointment.date || 'No Date'}</Text>
+                <Text style={tw`text-base mb-2`}>Details: {selectedAppointment.details || 'No Details'}</Text>
+                
+                {/* Display the image if available */}
+                {selectedAppointment.image && (
+                  <Image
+                    source={{ uri: `${BASE_URL}/${selectedAppointment.image}` }}
+                    style={styles.appointmentImage}
+                    resizeMode="cover"
+                  />
+                  
+                )}
+                
+
                 <Text style={tw`text-base mb-4 ${selectedAppointment.validated ? 'text-green-500' : 'text-red-500'}`}>
                   Status: {selectedAppointment.validated ? 'Validated' : 'Not Validated'}
                 </Text>
+                
                 {!selectedAppointment.validated && (
                   <TouchableOpacity
                     style={tw`bg-blue-600 p-3 rounded-lg`}
@@ -171,9 +189,12 @@ const TailorAppointmentScreen = ({ navigation }) => {
                   <Text style={tw`text-black text-center`}>Close</Text>
                 </TouchableOpacity>
               </>
+              
             )}
+            
           </View>
         </View>
+        
       </Modal>
     </SafeAreaView>
   );
@@ -192,6 +213,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 10,
     elevation: 10,
+  },
+  appointmentImage: {
+    width: '100%',
+    height: 200,
+    marginBottom: 15,
+    borderRadius: 10,
   },
 });
 

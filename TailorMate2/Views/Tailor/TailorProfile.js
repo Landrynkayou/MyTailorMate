@@ -1,28 +1,79 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Image, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import tw from 'twrnc';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
 const ProfileScreen = ({ navigation }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({
-    name: 'John Doe',
-    email: 'johndoe@example.com',
-    phone: '+1 234 567 8900',
-    address: '123 Tailor St, Fashion City, FC 12345',
-    specialization: 'Custom Suits',
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    specialization: '',
     photo: null,
   });
+
+  const [token, setToken] = useState(null);
+
+  // Fetch the profile data from the backend
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        // Get token from AsyncStorage
+        const storedToken = await AsyncStorage.getItem('token');
+        setToken(storedToken);
+
+        // API call to fetch the tailor's profile
+        const response = await axios.get('http://your-backend-url/api/tailor/profile', {
+          headers: {
+            Authorization: `Bearer ${storedToken}`,
+          },
+        });
+
+        const data = response.data;
+        setProfile({
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          address: data.address,
+          specialization: data.specialization,
+          photo: data.photo, // assuming the API returns a photo URL
+        });
+        setLoading(false);
+      } catch (error) {
+        console.error('Failed to fetch profile', error);
+        Alert.alert('Error', 'Failed to fetch profile data.');
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   const handleEdit = () => {
     setIsEditing(true);
   };
 
-  const handleSave = () => {
-    // Here you would typically send the updated profile to your backend
-    setIsEditing(false);
-    Alert.alert('Success', 'Profile updated successfully!');
+  const handleSave = async () => {
+    try {
+      // API call to update the profile
+      await axios.put('http://your-backend-url/api/tailor/profile', profile, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setIsEditing(false);
+      Alert.alert('Success', 'Profile updated successfully!');
+    } catch (error) {
+      console.error('Failed to update profile', error);
+      Alert.alert('Error', 'Failed to update profile.');
+    }
   };
 
   const handleChange = (key, value) => {
@@ -47,6 +98,14 @@ const ProfileScreen = ({ navigation }) => {
       }));
     }
   };
+
+  if (loading) {
+    return (
+      <View style={tw`flex-1 justify-center items-center`}>
+        <ActivityIndicator size="large" color="#3498db" />
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={tw`flex-1 bg-gray-100`}>

@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, SafeAreaView, ScrollView, Keyb
 import { MaterialIcons } from '@expo/vector-icons';
 import tw from 'twrnc';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Joi from 'joi'; // Import Joi for validation
 
 function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -10,36 +11,60 @@ function LoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
 
+  // Joi validation schema
+  const loginSchema = Joi.object({
+    email: Joi.string().email({ tlds: { allow: false } }).required().messages({
+      'string.email': 'Please enter a valid email address.',
+      'any.required': 'Email is required.',
+    }),
+    password: Joi.string().min(6).required().messages({
+      'string.min': 'Password must be at least 6 characters long.',
+      'any.required': 'Password is required.',
+    }),
+  });
+
+  // Validate form data
+  const validate = (data) => {
+    const { error } = loginSchema.validate(data, { abortEarly: false });
+    if (error) {
+      const validationErrors = error.details.map((detail) => detail.message);
+      Alert.alert('Validation Error', validationErrors.join('\n'));
+      return false;
+    }
+    return true;
+  };
+
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password.');
+    const formData = { email, password };
+
+    // Frontend validation
+    if (!validate(formData)) {
       return;
     }
-  
+
     setLoading(true);
-  
+
     try {
-      const response = await fetch('http://192.168.1.190:5000/api/clients/login', { // Adjust API endpoint if needed
+      const response = await fetch('http://192.168.1.190:5000/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(formData),
       });
-  
+
       const data = await response.json();
-  
+
       if (response.ok) {
-        // Check if user and token exist in the response
         const { token, user } = data;
-  
+
         if (token && user && user.id && user.role) {
-          // Store token and user ID in AsyncStorage
+          // Save user details to AsyncStorage
           await AsyncStorage.setItem('token', token);
           await AsyncStorage.setItem('userID', user.id);
           await AsyncStorage.setItem('userRole', user.role);
-    
-          // Navigate based on user role
+          await AsyncStorage.setItem('tailorName', user.name || ''); // Save tailor's name
+
           switch (user.role) {
             case 'Tailor':
               navigation.navigate('TailorLandingPage');
@@ -55,22 +80,18 @@ function LoginScreen({ navigation }) {
           Alert.alert('Error', 'User data is missing or incomplete.');
         }
       } else {
-        // Handle specific error messages from the backend
         Alert.alert('Error', data.message || 'Login failed. Please check your credentials and try again.');
       }
     } catch (error) {
       if (error.name === 'TypeError') {
-        // Handle network errors or fetch-related errors
         Alert.alert('Network Error', 'Please check your internet connection and try again.');
       } else {
-        // Handle other types of errors
         Alert.alert('Error', 'An unexpected error occurred. Please try again later.');
       }
     } finally {
       setLoading(false);
     }
   };
-  
 
   return (
     <SafeAreaView style={tw`flex-1`}>
@@ -95,6 +116,7 @@ function LoginScreen({ navigation }) {
                 onChangeText={setEmail}
                 placeholder="Email"
                 keyboardType="email-address"
+                autoCapitalize="none"
                 style={tw`flex-1 px-3 text-base text-gray-800 h-12`}
                 placeholderTextColor="#95a5a6"
               />
@@ -127,7 +149,7 @@ function LoginScreen({ navigation }) {
 
           <TouchableOpacity
             onPress={handleLogin}
-            style={tw`bg-purple-500 w-90 rounded-lg py-3 my-8 mx-1 items-center`}
+            style={tw`bg-purple-500 w-full rounded-lg py-3 my-8 items-center`}
             disabled={loading}
           >
             {loading ? <ActivityIndicator color="white" /> : <Text style={tw`text-white text-lg font-bold`}>Login</Text>}
@@ -143,7 +165,7 @@ function LoginScreen({ navigation }) {
               onPress={() => navigation.navigate('Signup')}
               style={tw`bg-purple-500 rounded-lg py-3 mt-2 px-6`}
             >
-              <Text style={tw`text-white w-80 text-center text-lg font-bold`}>Sign Up</Text>
+              <Text style={tw`text-white text-center text-lg font-bold`}>Sign Up</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

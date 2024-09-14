@@ -6,6 +6,7 @@ const tailorSchema = new Schema({
   businessName: { type: String, required: true },
   address: { type: String, required: true },
   fullName: { type: String, required: true },
+  password: { type: String, required: true },
   location: { 
     type: String,
     required: true 

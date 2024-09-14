@@ -3,111 +3,121 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const sendEmail = require('../utils/sendEmail');
+const saltRounds = 10;
 const Tailor = require('../models/tailor');
 const JWT_SECRET = process.env.JWT_TOKEN_KEY; // Replace with your secret key
 
 // Login Function
-exports.login = async (req, res) => {
+exports.loginUser = async (req, res) => {
+  const { email, password } = req.body;
+
   try {
-    const { email, password } = req.body;
-
-    // Find user by email
+    // Check if the user exists
     const user = await User.findOne({ email });
-
     if (!user) {
-      return res.status(400).json({ message: 'Invalid email or password.' });
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    // Check if the provided password matches the user's stored password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid email or password.' });
+    // Compare the provided password with the hashed password in the database
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Generate a JWT token
-    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '2h' });
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
 
-    // Send back the token and user data (excluding sensitive information)
+    // Return successful response with token and user details
     res.json({
+      message: 'Login successful',
       token,
       user: {
         id: user._id,
+        name: user.name,
         email: user.email,
         role: user.role,
       },
     });
   } catch (error) {
-    console.error('Login Error:', error);
+    console.error('Login error:', error); // Log the error for debugging
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+//sign up
+exports.signup = async (req, res) => {
+  try {
+    const { fullName, email, phone, password, role, businessName, address, location } = req.body;
+
+    // Check if the user already exists with the same email and role
+    const existingUser = await User.findOne({ email, role });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Create a new user object with required fields
+    const userData = {
+      fullName,
+      email,
+      phone,
+      password: hashedPassword, // Hash the password
+      role,
+      location, // Include location in user data
+    };
+
+    // Add businessName and address if the role is 'Tailor'
+    if (role === 'Tailor') {
+      userData.businessName = businessName;
+      userData.address = address;
+    }
+
+    // Create and save the user
+    const user = new User(userData);
+    await user.save();
+
+    if (role === 'Tailor') {
+      const tailorData = {
+        userID: user._id,
+        fullName: user.fullName,
+        businessName,
+        address,
+        location, // Include location in tailor data
+        password: hashedPassword, // Include hashed password
+      };
+
+      const tailor = new Tailor(tailorData);
+      await tailor.save();
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+
+    // Send response
+    res.status(201).json({
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        fullName: user.fullName,
+        phone: user.phone,
+        businessName: user.businessName,
+        address: user.address,
+        location: user.location, // Include location in the response
+      },
+    });
+  } catch (error) {
+    console.error('Signup Error:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 
-// Signup Function (handles clients, tailors, and admins)
-exports.signup = async (req, res) => {
-    try {
-      const { fullName, email, phone, password, role, businessName, address, location } = req.body;
-  
-      // Check if the user already exists with the same email and role
-      const existingUser = await User.findOne({ email, role });
-      if (existingUser) {
-        return res.status(400).json({ message: 'User already exists' });
-      }
-  
-      // Create a new user object with required fields
-      const userData = {
-        fullName,
-        email,
-        phone,
-        password: await bcrypt.hash(password, 12), // Hash the password
-        role,
-        location, // Include location in user data
-      };
-  
-      // Add businessName and address if the role is 'Tailor'
-      if (role === 'Tailor') {
-        userData.businessName = businessName;
-        userData.address = address;
-      }
-  
-      // Create and save the user
-      const user = new User(userData);
-      await user.save();
-  
-      if (role === 'Tailor') {
-        const tailorData = {
-          userID: user._id,
-          fullName: user.fullName,
-          businessName,
-          address,
-          location, // Include location in tailor data
-        };
-  
-        const tailor = new Tailor(tailorData);
-        await tailor.save();
-      }
-  
-      // Generate JWT token
-      const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
-  
-      // Send response
-      res.status(201).json({
-        token,
-        user: {
-          id: user._id,
-          email: user.email,
-          role: user.role,
-          fullName: user.fullName,
-          phone: user.phone,
-          businessName: user.businessName,
-          address: user.address,
-          location: user.location, // Include location in the response
-        },
-      });
-    } catch (error) {
-      console.error('Signup Error:', error);
-      res.status(500).json({ message: 'Internal Server Error' });
-    }
-  };
 
 // Forgot Password Function
 exports.forgotPassword = async (req, res) => {

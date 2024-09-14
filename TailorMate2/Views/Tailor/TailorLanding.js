@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, FlatList, Image, SafeAreaView, TextInput, Animated, Easing, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, TextInput, Animated, Easing, Alert, SafeAreaView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import tw from 'twrnc';
 
 const TailorLandingScreen = ({ navigation }) => {
-  const [clients, setClients] = useState([
-  ]);
+  const [clients, setClients] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [searchVisible, setSearchVisible] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
@@ -14,25 +13,34 @@ const TailorLandingScreen = ({ navigation }) => {
   const [showAddClientForm, setShowAddClientForm] = useState(false);
   const searchInputRef = useRef(null);
   const [userId, setUserId] = useState(null);
+  const [tailorName, setTailorName] = useState(''); // To store the tailor's name
 
   useEffect(() => {
-    // Fetch userId from AsyncStorage
-    const fetchUserId = async () => {
+    // Fetch userId and tailorName from AsyncStorage
+    const fetchUserDetails = async () => {
       try {
         const storedUserId = await AsyncStorage.getItem('userId');
+        const storedTailorName = await AsyncStorage.getItem('tailorName'); // Assuming tailorName is also stored
+
         if (storedUserId) {
           setUserId(storedUserId);
         } else {
           Alert.alert('Error', 'User ID is missing. Please log in again.');
-          navigation.navigate('Login'); // Redirect to login if userId is missing
+          navigation.navigate('Login');
+        }
+
+        if (storedTailorName) {
+          setTailorName(storedTailorName); // Set the tailor's name
+        } else {
+          Alert.alert('Error', 'Tailor name is missing. Please log in again.');
         }
       } catch (error) {
-        console.error('Failed to retrieve userId from AsyncStorage', error);
+        console.error('Failed to retrieve user details from AsyncStorage', error);
         Alert.alert('Error', 'Failed to retrieve user data');
       }
     };
 
-    fetchUserId();
+    fetchUserDetails();
   }, []);
 
   const filteredClients = clients.filter((client) =>
@@ -81,11 +89,8 @@ const TailorLandingScreen = ({ navigation }) => {
     }
   };
 
- 
-
   return (
     <SafeAreaView style={tw`flex-1 bg-gray-100`}>
-      
       <View style={tw`flex-row mb-5 items-center py-4 px-5`}>
         <TouchableOpacity style={tw`p-2`} onPress={handleMenuToggle}>
           <MaterialIcons name="menu" size={24} color="black" />
@@ -109,11 +114,15 @@ const TailorLandingScreen = ({ navigation }) => {
         )}
       </View>
 
+      {/* Display the tailor's name */}
+      <View style={tw`flex-row justify-center items-center`}>
+        <Text style={tw`text-lg text-gray-700`}>Welcome, {tailorName}</Text>
+      </View>
+
       {!showAddClientForm && (
         <FlatList
           data={filteredClients}
           keyExtractor={(item) => item.id}
-        
         />
       )}
 

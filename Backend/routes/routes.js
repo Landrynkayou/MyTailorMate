@@ -9,6 +9,7 @@ const authController = require('../controllers/authController');
 const appointmentController = require('../controllers/appointment');
 const orderController = require('../controllers/order');
 const measurementController = require('../controllers/measurement');
+const notificationController = require('../controllers/notification'); 
 const auth = require('../middleware/auth'); // Import JWT auth middleware
 const multer = require('multer');
 const upload = multer({ dest: 'uploads/' });
@@ -17,14 +18,12 @@ const upload = multer({ dest: 'uploads/' });
 router.post('/reset-password', authController.forgotPassword);
 
 // Signup routes
-router.post('/clients/signup', authController.signup);  // Client signup
-router.post('/tailors/signup', authController.signup);  // Tailor signup
-router.post('/admins/signup', authController.signup);   // Admin signup
+router.post('/signup', authController.signup);  // Client signup
+   // Admin signup
 
 // Login routes
-router.post('/clients/login', authController.login);    // Client login
-router.post('/tailors/login', authController.login);    // Tailor login
-router.post('/admins/login', authController.login);     // Admin login
+router.post('/login', authController.loginUser);    // Client login
+ // Admin login
 
 // Protected routes (authentication required)
 
@@ -54,12 +53,12 @@ router.delete('/orders/:orderId', auth, orderController.deleteOrder);
 router.patch('/orders/:orderId/status', auth, orderController.toggleOrderStatus);
 // Appointment Routes
 router.route('/appointments')
-  .post(auth, appointmentController.createAppointment)
+.post(auth, upload.single('image'), appointmentController.createAppointment)
   .get(auth, appointmentController.getAppointments);
 
 router.route('/appointments/:appointmentId')
   .get(auth, appointmentController.getAppointment)
-  .put(auth, appointmentController.updateAppointment)
+  .put(auth, upload.single('image'), appointmentController.updateAppointment)
   .delete(auth, appointmentController.deleteAppointment);
 
 router.patch('/appointments/:id/validate', auth, appointmentController.validateAppointment);
@@ -98,5 +97,14 @@ router.route('/admins/users/:userId')
   .delete(auth, adminController.deleteUser);
 
 router.delete('/admins/:adminId', auth, adminController.deleteAdmin);
+
+router.route('/notifications')
+  .post(auth, notificationController.createNotification) // Create a new notification
+  .get(auth, notificationController.getAllNotifications); // Get all notifications
+
+router.route('/notifications/:id')
+  .get(auth, notificationController.getNotification) // Get a specific notification
+  .put(auth, notificationController.updateNotification) // Update a specific notification
+  .delete(auth, notificationController.deleteNotification); // Delete a specific notification
 
 module.exports = router;

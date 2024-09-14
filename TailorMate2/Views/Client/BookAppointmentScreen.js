@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, Modal, TextInput, Alert, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, SafeAreaView, Modal, TextInput, Alert, FlatList, Image } from 'react-native';
 import tw from 'twrnc';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import * as ImagePicker from 'expo-image-picker';
 
 const AppointmentScreen = ({ navigation }) => {
   const [appointments, setAppointments] = useState([]);
@@ -10,6 +11,7 @@ const AppointmentScreen = ({ navigation }) => {
   const [newDate, setNewDate] = useState('');
   const [newTime, setNewTime] = useState('');
   const [newDetails, setNewDetails] = useState('');
+  const [image, setImage] = useState(null); // State for storing the image
   const [userId, setUserId] = useState('');
 
   // Fetch userId and appointments
@@ -59,16 +61,27 @@ const AppointmentScreen = ({ navigation }) => {
     }
   }, []);
 
+  // Handle image selection
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission denied', 'Sorry, we need camera roll permissions to make this work!');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.cancelled) {
+      setImage(result.assets[0].uri);
+    }
+  };
+//
   const handleAddAppointment = async () => {
     if (newDate && newTime && newDetails && userId) {
-      const newAppointment = {
-        date: newDate,
-        time: newTime,
-        details: newDetails,
-        status: 'pending', // Default status
-        userId,
-      };
-
       try {
         const token = await AsyncStorage.getItem('token');
         if (!token) {
@@ -76,13 +89,32 @@ const AppointmentScreen = ({ navigation }) => {
           return;
         }
 
+        // Create form data for the appointment, including the image
+        const formData = new FormData();
+        formData.append('date', newDate);
+        formData.append('time', newTime);
+        formData.append('details', newDetails);
+        formData.append('status', 'pending');
+        formData.append('userId', userId);
+
+        // Append the image if it's selected
+        if (image) {
+          const filename = image.split('/').pop();
+          const fileType = filename.split('.').pop();
+          formData.append('image', {
+            uri: image,
+            name: filename,
+            type: `image/${fileType}`,
+          });
+        }
+          console.log(image)
         const response = await fetch('http://192.168.1.190:5000/api/appointments', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            'Content-Type': 'multipart/form-data', // Important to use multipart
           },
-          body: JSON.stringify(newAppointment),
+          body: formData,
         });
 
         if (response.ok) {
@@ -90,6 +122,7 @@ const AppointmentScreen = ({ navigation }) => {
           setNewDate('');
           setNewTime('');
           setNewDetails('');
+          setImage(null); // Reset the image
           setIsModalVisible(false);
           Alert.alert('Success', 'Appointment added successfully');
         } else {
@@ -111,10 +144,11 @@ const AppointmentScreen = ({ navigation }) => {
       <TouchableOpacity style={tw`bg-white mx-4 my-2 p-4 rounded-lg shadow-lg`}>
         <View style={tw`flex-row justify-between items-center`}>
           <View>
-            <Text style={tw`font-semibold text-lg text-gray-800`}>{item.date} {item.time}</Text>
+            <Text style={tw`font-semibold text-lg text-gray-800`}>{item.date} </Text>
+            <Text style={tw`font-semibold text-lg text-gray-800`}>At: {item.time}</Text>
             <Text style={tw`text-gray-600`}>{item.details}</Text>
           </View>
-          <View style={tw`px-2 py-1 rounded-full bg-${statusColor}-00`}>
+          <View style={tw`px-2 py-1 rounded-full bg-${statusColor}-200`}>
             <Text style={tw`text-sm font-semibold text-${statusColor}-800`}>{item.status}</Text>
           </View>
         </View>
@@ -165,6 +199,18 @@ const AppointmentScreen = ({ navigation }) => {
               value={newDetails}
               onChangeText={setNewDetails}
             />
+            
+            {/* Image picker button */}
+            <TouchableOpacity style={tw`bg-gray-200 p-3 rounded-lg mb-3`} onPress={pickImage}>
+              <Text style={tw`text-center`}>{image ? 'Change Image' : 'Pick Image'}</Text>
+            </TouchableOpacity>
+
+            {/* Display selected image */}
+            {image && <Image source={{ uri: image }} 
+            style={tw`w-40 h-40 mb-4 rounded-lg`} 
+            resizeMode="cover" 
+            />}
+
             <View style={tw`flex-row justify-between`}>
               <TouchableOpacity
                 style={tw`bg-red-600 p-3 rounded-lg w-2/5`}

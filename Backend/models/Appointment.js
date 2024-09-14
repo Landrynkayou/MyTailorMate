@@ -26,6 +26,10 @@ const appointmentSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  image: {
+    type: String, // Store image path or URL
+    required: false,
+  },
 });
 
 module.exports = mongoose.model('Appointment', appointmentSchema);
